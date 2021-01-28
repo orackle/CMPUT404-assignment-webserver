@@ -32,6 +32,10 @@ import os
 class MyWebServer(socketserver.BaseRequestHandler):
 
     def handle(self):
+        """
+        Handles the request sent to server and sends out an HTTP response
+        HTTP Response is sent to client using a bytearray
+        """
         self.data = self.request.recv(1024).strip()
         request_string = self.data.decode('utf-8')
         check_status = request_string.split(" ")
@@ -43,26 +47,41 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.request.sendall(bytearray(http_response,'utf-8')) # serving the response to the server
 
     def check_405(self, request):
+        """
+        Checks if server is receiving anything other than a GET method
+        :param request: the array of request sent to server
+        :returns 405 Method not Allowed http response if true
+        """
         if(request[0]!="GET"):
             page = self.return_error_html("405 Method Not Allowed")
             return self.return_HTTP("405 Method Not Allowed", page)
         return False
 
     def check_404(self, request):
-        # check validity of request url
-        # send 404 if file doesn't exist in ./www
-        # from stackoverflow answer by aghast https://stackoverflow.com/users/4029014/aghast
-        # https://stackoverflow.com/questions/36142188/search-a-directory-including-all-subdirectories-that-may-or-may-not-exist-for
+        """
+        check validity of request url
+        - if file doesn't exist in ./www
+            :returns: 404 HTTP Error response
+        - if url is of directory and file path is incomplete
+            :returns: 301 Moved Permanently, new Location
+        - if url is trailing with "/"
+            - serves the index.html if it exists in the folder
+            - returns with 200 OK HTTP Response
+
+        Citations:
+        parent = os.path.abspath("www")
+        from stackoverflow answer by sherbang https://stackoverflow.com/users/5026/sherbang
+        https://stackoverflow.com/questions/51520/how-to-get-an-absolute-file-path-in-python
+        """
         parent = os.path.abspath("www")
         path_given = request[1]
-        newpath = parent + path_given
+        newpath = parent + path_given    # appends requested path onto base path
 
-        if parent not in os.path.abspath(newpath):
+        if parent not in os.path.abspath(newpath):      # checks that path doesn't go behind www/ directory
             page = self.return_error_html("404 Page Not Found")
             return self.return_HTTP("404 Page Not Found", page)
 
-
-        if os.path.exists(newpath):
+        if os.path.exists(newpath):             # only proceeds if it's an existing path
             if os.path.isdir(newpath):
                 if path_given[-1] != "/":
                     page = self.return_error_html(f"301 Moved Permanently\r\nLocation: localhost:8000/{path_given}/")
@@ -84,11 +103,13 @@ class MyWebServer(socketserver.BaseRequestHandler):
             return self.return_HTTP("404 Page Not Found", page)
         return False
 
-
-    def check_301(self, request):
-        pass
-
     def return_HTTP(self, status_code, page):
+        """
+        :param status_code: 200 OK | 404 Page Not Found
+            | 301 Moved Permanently | 405 Method Not Allowed
+        :param page: html page
+        :returns: a simple http response as string
+        """
         http = """HTTP/1.1 {}\r\nAllow: GET\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n{}""".format(status_code,page)
         return http
 
