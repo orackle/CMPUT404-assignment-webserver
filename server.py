@@ -70,8 +70,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         Citations:
         parent = os.path.abspath("www")
-        from stackoverflow answer by sherbang https://stackoverflow.com/users/5026/sherbang
-        https://stackoverflow.com/questions/51520/how-to-get-an-absolute-file-path-in-python
+        from https://docs.python.org/3/library/os.path.html
         """
         parent = os.path.abspath("www")
         path_given = request[1]
