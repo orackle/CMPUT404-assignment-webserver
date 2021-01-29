@@ -54,7 +54,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
         """
         if(request[0]!="GET"):
             page = self.return_error_html("405 Method Not Allowed")
-            return self.return_HTTP("405 Method Not Allowed", page)
+            content_length = len(page)
+            return self.return_HTTP("405 Method Not Allowed", content_length,page)
         return False
 
     def check_404(self, request):
@@ -78,13 +79,15 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         if parent not in os.path.abspath(newpath):      # checks that path doesn't go behind www/ directory
             page = self.return_error_html("404 Page Not Found")
-            return self.return_HTTP("404 Page Not Found", page)
+            content_length = len(page)
+            return self.return_HTTP("404 Page Not Found", content_length,page)
 
         if os.path.exists(newpath):             # only proceeds if it's an existing path
             if os.path.isdir(newpath):
                 if path_given[-1] != "/":
                     page = self.return_error_html(f"301 Moved Permanently\r\nLocation: localhost:8000/{path_given}/")
-                    return self.return_HTTP(f"301 Moved Permanently\r\nLocation: {path_given}/", page)
+                    content_length = len(page)
+                    return self.return_HTTP(f"301 Moved Permanently\r\nLocation: {path_given}/", content_length, page)
             if path_given[-1] == "/":
                 if "html" not in path_given:
                     newpath += "index.html"
@@ -99,32 +102,34 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 mimetype = "text/html"
                 if "css" in newpath:
                     mimetype = "text/css"
-                return """HTTP/1.1 {}\r\nAllow: GET\r\nContent-Type: {}\r\nConnection: close\r\n\r\n{}""".format("200 OK",mimetype,read_page)
+                content_length = len(read_page)
+                return """HTTP/1.1 {}\r\nAllow: GET\r\nContent-Length: {}\r\nContent-Type: {}\r\nConnection: close\r\n\r\n{}""".format("200 OK",content_length,mimetype,read_page)
 
         page = self.return_error_html("404 Page Not Found")
-        return self.return_HTTP("404 Page Not Found", page)
+        content_length = len(page)
+        return self.return_HTTP("404 Page Not Found", content_length,page)
 
 
-    def return_HTTP(self, status_code, page):
+    def return_HTTP(self, status_code,content_length, page):
         """
         :param status_code: 200 OK | 404 Page Not Found
             | 301 Moved Permanently | 405 Method Not Allowed
         :param page: html page
         :returns: a simple http response as string
         """
-        http = """HTTP/1.1 {}\r\nAllow: GET\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n{}""".format(status_code,page)
+        http = """HTTP/1.1 {}\r\nAllow: GET\r\nContent-Length: {}\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n{}""".format(status_code,content_length,page)
         return http
 
     def return_error_html(self, status_code):
         page = """
         <!DOCTYPE html>
         <html>
-            <head>
-                <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-            </head>
-            <body>
-                <h1 class="text-muted text-center">{}</h1>
-            </body>
+        <head>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        </head>
+        <body>
+            <h1 class="text-muted text-center">{}</h1>
+        </body>
         </html>
         """.format(status_code)
         return page
