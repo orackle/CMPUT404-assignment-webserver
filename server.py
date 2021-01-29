@@ -88,19 +88,22 @@ class MyWebServer(socketserver.BaseRequestHandler):
             if path_given[-1] == "/":
                 if "html" not in path_given:
                     newpath += "index.html"
+            # file path is valid
+            # to check its a file that can be served over web
+            # only css or html files
+            if "css" in newpath or "html" in newpath:
+                fetch_page = open(newpath, "r")
+                read_page = fetch_page.read()
+                fetch_page.close()
 
-            fetch_page = open(newpath, "r")
-            read_page = fetch_page.read()
-            fetch_page.close()
+                mimetype = "text/html"
+                if "css" in newpath:
+                    mimetype = "text/css"
+                return """HTTP/1.1 {}\r\nAllow: GET\r\nContent-Type: {}\r\nConnection: close\r\n\r\n{}""".format("200 OK",mimetype,read_page)
 
-            mimetype = "text/html"
-            if "css" in newpath:
-                mimetype = "text/css"
-            return """HTTP/1.1 {}\r\nAllow: GET\r\nContent-Type: {}\r\nConnection: close\r\n\r\n{}""".format("200 OK",mimetype,read_page)
-        else:
-            page = self.return_error_html("404 Page Not Found")
-            return self.return_HTTP("404 Page Not Found", page)
-        return False
+        page = self.return_error_html("404 Page Not Found")
+        return self.return_HTTP("404 Page Not Found", page)
+
 
     def return_HTTP(self, status_code, page):
         """
